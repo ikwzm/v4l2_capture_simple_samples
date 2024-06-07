@@ -23,9 +23,7 @@
 #define  CAPTURE_IMAGE_COUNT		10
 #define  CAPTURE_NUM_BUFFERS		4
 
-void proc_run(int buf_index, int plane, void* start, size_t size)
-{
-}
+#include "proc_sample.h"
 
 static int xioctl(int fd, int ioctl_code, void* parameter)
 {
@@ -52,6 +50,7 @@ int main(int argc, char** argv)
 		void*  start;
 		size_t length;
 	}                          buffers[CAPTURE_NUM_BUFFERS][VIDEO_MAX_PLANES];
+	proc_init(CAPTURE_IMAGE_WIDTH, CAPTURE_IMAGE_HEIGHT);
 	//
 	// 1. Open Device
 	//
@@ -288,5 +287,6 @@ int main(int argc, char** argv)
 	//
 	// 13. Done
 	//
+	proc_done();
 	return EXIT_SUCCESS;
 }
