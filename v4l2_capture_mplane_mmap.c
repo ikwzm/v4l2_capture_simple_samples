@@ -146,13 +146,18 @@ int main(int argc, char** argv)
 		for (int plane = 0; plane < num_planes; plane++) {
 			unsigned int offset = v4l2_planes[i][plane].m.mem_offset;
 			size_t       size   = v4l2_planes[i][plane].length;
+			void*        start  = mmap(NULL,
+						   size,
+						   PROT_READ | PROT_WRITE,
+						   MAP_SHARED,
+						   video_fd,
+						   offset);
+			if (start == MAP_FAILED) {
+				perror("mmap");
+				return EXIT_FAILURE;
+			}
 			buffers[i][plane].length = size;
-			buffers[i][plane].start  = mmap(NULL,
-							size,
-							PROT_READ | PROT_WRITE,
-							MAP_SHARED,
-							video_fd,
-							offset);
+			buffers[i][plane].start  = start;
 		}
 	}
 	//
@@ -240,14 +245,29 @@ int main(int argc, char** argv)
 		return EXIT_FAILURE;
 	}
 	//
-	// 11. Close Video Device
+	// 11. Unmap Buffers
+	//
+	for (int i = 0; i < CAPTURE_NUM_BUFFERS; i++) {
+		for (int plane = 0; plane < num_planes; plane++) {
+			void*  start = buffers[i][plane].start;
+			size_t size  = buffers[i][plane].length;
+			if ((start != NULL) && (start != MAP_FAILED)) {
+				if (munmap(start, size)) {
+					perror("munmap");
+					return EXIT_FAILURE;
+				}
+			}
+		}
+	}
+	//
+	// 12. Close Video Device
 	//
 	if (close(video_fd) < 0) {
 		perror("Filed to close file");
 		return EXIT_FAILURE;
 	}	
 	//
-	// 12. Done
+	// 13. Done
 	//
 	return EXIT_SUCCESS;
 }

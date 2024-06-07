@@ -164,16 +164,20 @@ int main(int argc, char** argv)
 				perror("DMA_HEAP_IOCTL_ALLOC");
 				return EXIT_FAILURE;
 			}
-			v4l2_planes[i][plane].m.fd = alloc_data.fd;
 			dma_heap_start = mmap(NULL,
 				              dma_heap_size,
 				              PROT_READ | PROT_WRITE,
 				              MAP_SHARED,
 				              alloc_data.fd,
 					      0);
+			if (dma_heap_start == MAP_FAILED) {
+				perror("mmap");
+				return EXIT_FAILURE;
+			}
 			buffers[i][plane].length = dma_heap_size;
 			buffers[i][plane].start  = dma_heap_start;
-                }
+			v4l2_planes[i][plane].m.fd = alloc_data.fd;
+		}
 	}
 	//
 	// 7. Enqueue Buffers
@@ -260,14 +264,29 @@ int main(int argc, char** argv)
 		return EXIT_FAILURE;
 	}
 	//
-	// 11. Close Video Device
+	// 11. Unmap Buffers
+	//
+	for (int i = 0; i < CAPTURE_NUM_BUFFERS; i++) {
+		for (int plane = 0; plane < num_planes; plane++) {
+			void*  start = buffers[i][plane].start;
+			size_t size  = buffers[i][plane].length;
+			if ((start != NULL) && (start != MAP_FAILED)) {
+				if (munmap(start, size)) {
+					perror("munmap");
+					return EXIT_FAILURE;
+				}
+			}
+		}
+	}
+	//
+	// 12. Close Video Device
 	//
 	if (close(video_fd) < 0) {
 		perror("Filed to close file");
 		return EXIT_FAILURE;
 	}	
 	//
-	// 12. Done
+	// 13. Done
 	//
 	return EXIT_SUCCESS;
 }
