@@ -186,9 +186,11 @@ int main(int argc, char** argv)
 	// 9. Capture Images
 	//
 	for (int count = 0; count < CAPTURE_IMAGE_COUNT; count++) {
+		proc_start(count);
 		//
 		// 9.1 Wait Captured Buffer
 		//
+		proc_wait_start(count);
 		struct pollfd     poll_fds[1];
 		int               poll_result;
 		poll_fds[0].fd     = video_fd;
@@ -198,9 +200,11 @@ int main(int argc, char** argv)
 			perror("Waiting for frame");
 			return EXIT_FAILURE;
 		}
+		proc_wait_done(count);
 		//
 		// 9.2 Dequeue Captured Buffer
 		//
+		proc_dequeue_start(count);
 		int               buf_index;
 		struct v4l2_plane buf_plane[VIDEO_MAX_PLANES] = {{0}};
 		memset(&v4l2_buf, 0, sizeof(v4l2_buf));
@@ -213,17 +217,21 @@ int main(int argc, char** argv)
 			return EXIT_FAILURE;
 		}
 		buf_index = v4l2_buf.index;
+		proc_dequeue_done(count);
 		//
 		// 9.3 Process Captured Buffer
 		//
+		proc_run_start(count);
 		for (int plane = 0; plane < num_planes; plane++) {
 			void*  buf_start = buffers[buf_index][plane].start;
 			size_t buf_size  = buffers[buf_index][plane].length;
 			proc_run(count, buf_index, plane, buf_start, buf_size);
 		}
+		proc_run_done(count);
 		//
 		// 9.4 Enqueue Captured Buffer
 		//
+		proc_enqueue_start(count);
 		memset(&v4l2_buf, 0, sizeof(v4l2_buf));
 		v4l2_buf.type     = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
 		v4l2_buf.memory   = V4L2_MEMORY_MMAP;
@@ -234,6 +242,8 @@ int main(int argc, char** argv)
 			perror("VIDIOC_QBUF");
 			return EXIT_FAILURE;
 		}
+		proc_enqueue_done(count);
+		proc_done(count);
 	}
 	//
 	// 10. Stop Stream
@@ -268,6 +278,6 @@ int main(int argc, char** argv)
 	//
 	// 13. Done
 	//
-	proc_done();
+	proc_complete();
 	return EXIT_SUCCESS;
 }
