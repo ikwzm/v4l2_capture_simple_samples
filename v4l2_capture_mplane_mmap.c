@@ -47,7 +47,7 @@ int main(int argc, char** argv)
 		void*  start;
 		size_t length;
 	}                          buffers[CAPTURE_NUM_BUFFERS][VIDEO_MAX_PLANES];
-	proc_init(CAPTURE_IMAGE_WIDTH, CAPTURE_IMAGE_HEIGHT);
+	proc_init(CAPTURE_IMAGE_COUNT, CAPTURE_IMAGE_WIDTH, CAPTURE_IMAGE_HEIGHT);
 	//
 	// 1. Open Device
 	//
@@ -219,7 +219,7 @@ int main(int argc, char** argv)
 		for (int plane = 0; plane < num_planes; plane++) {
 			void*  buf_start = buffers[buf_index][plane].start;
 			size_t buf_size  = buffers[buf_index][plane].length;
-			proc_run(buf_index, plane, buf_start, buf_size);
+			proc_run(count, buf_index, plane, buf_start, buf_size);
 		}
 		//
 		// 9.4 Enqueue Captured Buffer
